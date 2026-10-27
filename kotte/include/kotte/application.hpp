@@ -83,6 +83,9 @@ namespace kotte
         void update_presentation(float delta_time);
         void update_player(float delta_time);
         void try_move_player(Vector2 axis_displacement);
+
+        void track_player_damage();
+
         void update_enemies(float delta_time);
         void queue_bomb_placement();
         void apply_entity_destructions();

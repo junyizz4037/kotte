@@ -93,10 +93,17 @@ namespace kotte
     }
 
     void Application::update_gameplay(float delta_time){
+
         // The player and every enemy are movers; each asks its own collision question.
-        update_player(delta_time);
+        if (entities_.contains(player_handle_)) {
+            update_player(delta_time);
+        }
+     
         update_enemies(delta_time);
-        queue_bomb_placement();
+        if (entities_.contains(player_handle_)) {
+            queue_bomb_placement();
+        }
+        
     }
 
     void Application::update_timed_gameplay(float delta_time){
@@ -198,6 +205,63 @@ namespace kotte
 
         const Rectangle new_world_bounds = entity_world_bounds(player_entity);
         spatial_grid_.update(player_handle_, old_world_bounds, new_world_bounds);
+
+        track_player_damage();
+    }
+
+    void Application::track_player_damage() {
+        
+        if (player().is_dead) {
+            return;
+        }
+        const Rectangle player_bounds = entity_collision_bounds(player());
+        Rectangle damage_bounds = player_bounds;
+        damage_bounds.x -= 2.0f;
+        damage_bounds.y -= 2.0f;
+        damage_bounds.width += 4.0f;
+        damage_bounds.height += 4.0f;
+        bool killed = false;
+
+        //checkl the collision with enemies
+        const SpatialQuery query = spatial_grid_.query(damage_bounds);
+        for (const EntityHandle candidate_handle : query.entity_handles) {
+            if (candidate_handle == player_handle_) continue;
+
+            const Entity* candidate = entities_.try_get(candidate_handle);
+            if (candidate != nullptr && candidate->kind == EntityKind::enemy) {
+                if (CheckCollisionRecs(damage_bounds, entity_collision_bounds(*candidate))) {
+                    killed = true;
+                    break;
+                }
+            }
+        }
+
+        //check the explosion damage to the player
+        if (!killed) {
+            constexpr float blast_inset = 3.0f; 
+            const float half_tile = static_cast<float>(tile_size_) / 2.0f;
+
+            for (const BlastEffect& effect : blast_effects_) {
+                for (const Vector2& tile_world_centre : effect.tile_centres) {
+                    const Rectangle blast_bounds{
+                        tile_world_centre.x - half_tile + blast_inset,
+                        tile_world_centre.y - half_tile + blast_inset,
+                        static_cast<float>(tile_size_) - blast_inset * 2.0f,
+                        static_cast<float>(tile_size_) - blast_inset * 2.0f
+                    };
+
+                    if (CheckCollisionRecs(player_bounds, blast_bounds)) {
+                        killed = true;
+                        break;
+                    }
+                }
+                if (killed) break;
+            }
+        }
+        if (killed) {
+            player().is_dead = true;
+            destroy_entity_requests_.push_back({ player_handle_ });
+        }
     }
 
     void Application::try_move_player(Vector2 axis_displacement){
@@ -392,7 +456,11 @@ namespace kotte
     void Application::update_camera(float delta_time) noexcept{
         (void) delta_time; // name the argument to avoid the static analyzer yelling at us. :) We'll animate the camera later.
         camera_.set_viewport_size(window_.size());
-        camera_.set_centre(player().world_position);
+       
+
+        if (entities_.contains(player_handle_)) {
+            camera_.set_centre(player().world_position);
+        }
     }
 
     void Application::render(){
