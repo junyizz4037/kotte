@@ -347,6 +347,20 @@ namespace kotte
                 continue;
             }
 
+            bool bombExist = false;
+            for (EntityHandle active_handle : active_bomb_handles_) {
+                const Entity* existing_bomb = entities_.try_get(active_handle);
+                if (existing_bomb != nullptr
+                    && existing_bomb->world_position.x == request.world_position.x
+                    && existing_bomb->world_position.y == request.world_position.y) {
+                    bombExist = true;
+                    break;
+                }
+            }
+            if (bombExist) {
+                continue;
+            }
+
             const Entity bomb{
                 .kind = EntityKind::bomb,
                 .world_position = request.world_position,
@@ -759,6 +773,7 @@ namespace kotte
 
         // Room walls are a simple boundary rule in the current map. Test the
         // complete visual bounds directly before asking the grid about entities.
+
         const Rectangle proposed_world_bounds = entity_world_bounds(proposed_entity);
         const float floor_left = static_cast<float>(tile_size_);
         const float floor_top = static_cast<float>(tile_size_);
@@ -774,6 +789,9 @@ namespace kotte
         }
 
         const Rectangle proposed_collision_bounds = entity_collision_bounds(proposed_entity);
+
+        const Entity& current_entity = entity(moving_entity_handle);
+        const Rectangle current_collision_bounds = entity_collision_bounds(current_entity);
 
         // Broad phase: query nearby candidates using the proposed bounds.
         const SpatialQuery spatial_query = spatial_grid_.query(proposed_collision_bounds);
@@ -796,6 +814,13 @@ namespace kotte
                 continue;
             }
 
+            if (candidate->kind == EntityKind::bomb && candidate->bomb_state.has_value()) {
+                if (candidate->bomb_state->owner == moving_entity_handle) {
+                    if (CheckCollisionRecs(current_collision_bounds, entity_collision_bounds(*candidate))) {
+                        continue;
+                    }
+                }
+            }
             // Narrow phase: exact-test the remaining solid candidate.
             ++collision_diagnostics_.exact_tests;
             if(CheckCollisionRecs(proposed_collision_bounds, entity_collision_bounds(*candidate))){
@@ -814,7 +839,7 @@ namespace kotte
         case EntityKind::enemy:
             return true;
         case EntityKind::bomb:
-            return false;
+            return true;
         }
 
         return false;
