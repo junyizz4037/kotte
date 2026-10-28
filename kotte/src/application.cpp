@@ -72,6 +72,7 @@ namespace kotte
             request_exit();
         }
         frame_actions_.place_bomb = IsKeyPressed(KEY_SPACE);
+        frame_actions_.restart = IsKeyPressed(KEY_R);
 
         Vector2& movement_direction = frame_actions_.player_movement_direction;
         if(IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)){
@@ -87,6 +88,7 @@ namespace kotte
             movement_direction.y += 1.0f;
         }
 
+        
         // Normalize intent before simulation so bindings cannot change movement speed.
         if(movement_direction.x != 0.0f || movement_direction.y != 0.0f){
             movement_direction = Vector2Normalize(movement_direction);
@@ -97,6 +99,10 @@ namespace kotte
 
         // The player and every enemy are movers; each asks its own collision question.
         if (game_state != GameState::playing) {
+            if (frame_actions_.restart) {
+                restart_game();
+            }
+            return;
             return;
         }
 
@@ -635,13 +641,15 @@ namespace kotte
         DrawText("move: WASD/arrows | bomb: Space | quit: Q/Escape", 10, window_.height() - 30, 20, LIGHTGRAY);
 
         std::string score_text = std::format("Score: {} / {}", score, target_score);
-        DrawText(score_text.c_str(), window_.width()-260, 35, 30, YELLOW);
+        DrawText(score_text.c_str(), window_.width() - 260, 35, 30, YELLOW);
 
         if (game_state == GameState::won) {
             DrawText("YOU WON!", window_.width() / 2 - 100, window_.height() / 2 - 25, 50, GREEN);
+            DrawText("Press R to Restart", window_.width() / 2 - 130, window_.height() / 2 + 30, 30, GREEN);
         }
         else if (game_state == GameState::lost) {
             DrawText("GAME OVER", window_.width() / 2 - 130, window_.height() / 2 - 25, 50, RED);
+            DrawText("Press R to Restart", window_.width() / 2 - 130, window_.height() / 2 + 30, 30, RED);
         }
 
 
@@ -878,4 +886,28 @@ namespace kotte
         exit_requested_ = true;
     }
 
+    void Application::restart_game() {
+        random_ = Random{ seed_ };
+
+        enemy_handles_.clear();
+        active_bomb_handles_.clear();
+        place_bomb_requests_.clear();
+        bomb_detonated_facts_.clear();
+        destroy_entity_requests_.clear();
+        blast_effects_.clear();
+
+        entities_ = EntityStore{};
+        entities_.reserve(map_.tile_count() / 4);
+
+        spatial_grid_ = SpatialGrid{ {
+            static_cast<float>(map_.width() * tile_size_),
+            static_cast<float>(map_.height() * tile_size_)},
+            spatial_cell_size_ };
+
+        score = 0;
+        game_state = GameState::playing;
+
+        populate_entities();
+        initialize_enemies();
+    }
 } //kotte

@@ -56,6 +56,7 @@ namespace kotte
         struct FrameActions final {
             Vector2 player_movement_direction{};
             bool place_bomb = false;
+            bool restart = false;
         };
 
         struct PlaceBombRequest final {
@@ -79,6 +80,7 @@ namespace kotte
             float remaining_seconds = 0.0f;
         };
 
+        void restart_game();
         void run_frame(float delta_time);
         void begin_frame() noexcept;
         void collect_frame_actions() noexcept;
