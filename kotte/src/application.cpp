@@ -10,6 +10,7 @@
 
 namespace kotte
 {    
+   
     Application::Application(
         int width,
         int height,
@@ -19,7 +20,7 @@ namespace kotte
         : window_{width, height, title, target_fps}
         , camera_{window_.size()}
         , random_{seed}
-        , map_{make_room(200, 120, random_)}
+        , map_{make_room(20, 12, random_)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_size_),
             static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
@@ -95,6 +96,10 @@ namespace kotte
     void Application::update_gameplay(float delta_time){
 
         // The player and every enemy are movers; each asks its own collision question.
+        if (game_state != GameState::playing) {
+            return;
+        }
+
         if (entities_.contains(player_handle_)) {
             update_player(delta_time);
         }
@@ -261,6 +266,7 @@ namespace kotte
         if (killed) {
             player().is_dead = true;
             destroy_entity_requests_.push_back({ player_handle_ });
+            game_state = GameState::lost;
         }
     }
 
@@ -370,6 +376,15 @@ namespace kotte
                 continue;
             }
 
+            if (game_state == GameState::playing) {
+                if (doomed->kind == EntityKind::enemy) {
+                    score += 50; 
+                }
+                else if (doomed->kind == EntityKind::crate) {
+                    score += 10; 
+                }
+            }
+
             // Spatial membership is derived from the live entity, so remove it
             // while the handle can still resolve to the bounds used at insertion.
             spatial_grid_.remove(request.entity, entity_world_bounds(*doomed));
@@ -389,6 +404,10 @@ namespace kotte
         });
 
         destroy_entity_requests_.clear();
+
+        if (game_state == GameState::playing && score >= target_score) {
+            game_state = GameState::won;
+        }
     }
 
     bool Application::resolve_blast_tile(
@@ -614,6 +633,18 @@ namespace kotte
         DrawText(diagnostics.c_str(), 10, window_.height() - 54, 20, RAYWHITE);
 
         DrawText("move: WASD/arrows | bomb: Space | quit: Q/Escape", 10, window_.height() - 30, 20, LIGHTGRAY);
+
+        std::string score_text = std::format("Score: {} / {}", score, target_score);
+        DrawText(score_text.c_str(), window_.width()-260, 35, 30, YELLOW);
+
+        if (game_state == GameState::won) {
+            DrawText("YOU WON!", window_.width() / 2 - 100, window_.height() / 2 - 25, 50, GREEN);
+        }
+        else if (game_state == GameState::lost) {
+            DrawText("GAME OVER", window_.width() / 2 - 130, window_.height() / 2 - 25, 50, RED);
+        }
+
+
     }
 
     void Application::populate_entities(){
