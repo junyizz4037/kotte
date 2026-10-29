@@ -182,5 +182,9 @@ namespace kotte
         int combo_multiplier_ = 1;
         float combo_timer_ = 0.0f;
         static constexpr float combo_window_seconds_ = 3.0f;
+
+        float enemy_spawn_timer_ = 5.0f;
+        static constexpr float enemy_spawn_interval_ = 3.0f;
+        std::vector<Vector2> spawn_enemy_requests_;
     };
 }

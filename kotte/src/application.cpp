@@ -126,6 +126,26 @@ namespace kotte
                 combo_multiplier_ = 1; 
             }
         }
+
+        if (game_state == GameState::playing) {
+            enemy_spawn_timer_ -= delta_time;
+            if (enemy_spawn_timer_ <= 0.0f) {
+                enemy_spawn_timer_ = enemy_spawn_interval_;
+                int spawn_x = 1;
+                int spawn_y = 1;
+                for (int i = 0; i < 20; ++i) {
+                    int rx = GetRandomValue(1, map_.width() - 2);
+                    int ry = GetRandomValue(1, map_.height() - 2);
+
+                    if (map_.at(rx, ry).type == TileType::floor) {
+                        spawn_x = rx;
+                        spawn_y = ry;
+                        break;
+                    }
+                }
+                spawn_enemy_requests_.push_back(tile_centre(spawn_x, spawn_y));
+            }
+        }
         // This list is independent of camera queries, so off-screen fuses advance.
         for(const EntityHandle bomb_handle : active_bomb_handles_){
             Entity* bomb = entities_.try_get(bomb_handle);
@@ -184,6 +204,17 @@ namespace kotte
         // Entity storage and every derived index change only at this boundary.
         apply_entity_destructions();
         apply_bomb_placements();
+
+        for (const Vector2& position : spawn_enemy_requests_) {
+            const Entity new_enemy{ EntityKind::enemy, position };
+            const EntityHandle handle = entities_.create(new_enemy);
+            spatial_grid_.insert(handle, entity_world_bounds(new_enemy));
+            enemy_handles_.push_back(handle);
+
+            Entity& enemy_ref = entity(handle);
+            enemy_ref.movement_heading = static_cast<CardinalDirection>(random_.next<4, std::uint8_t>());
+        }
+        spawn_enemy_requests_.clear();
     }
 
     void Application::update_presentation(float delta_time){
