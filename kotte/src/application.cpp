@@ -350,11 +350,10 @@ namespace kotte
     void Application::apply_bomb_placements(){
         for(const PlaceBombRequest& request : place_bomb_requests_){
             const Entity* owner = entities_.try_get(request.owner);
-            if(owner == nullptr || owner->kind != EntityKind::player
-                || owner_has_active_bomb(request.owner)){
+            if (owner == nullptr || owner->kind != EntityKind::player
+                || owner_has_active_bombs(request.owner) >= max_bomb_capacity_) {
                 continue;
             }
-
             bool bombExist = false;
             for (EntityHandle active_handle : active_bomb_handles_) {
                 const Entity* existing_bomb = entities_.try_get(active_handle);
@@ -888,13 +887,15 @@ namespace kotte
         return static_cast<CardinalDirection>(new_value);
     }
 
-    bool Application::owner_has_active_bomb(EntityHandle owner) const noexcept{
-        return std::ranges::any_of(active_bomb_handles_, [this, owner](EntityHandle bomb_handle){
-            const Entity* bomb = entities_.try_get(bomb_handle);
-            return bomb != nullptr
-                && bomb->bomb_state.has_value()
-                && bomb->bomb_state->owner == owner;
-        });
+    int Application::owner_has_active_bombs(EntityHandle owner) const noexcept{
+        int count = 0;
+        for (EntityHandle handle : active_bomb_handles_) {
+            const Entity* bomb = entities_.try_get(handle);
+            if (bomb != nullptr && bomb->bomb_state.has_value() && bomb->bomb_state->owner == owner) {
+                count++;
+            }
+        }
+        return count;
     }
 
     Vector2 Application::tile_centre(Vector2 world_position) noexcept{
