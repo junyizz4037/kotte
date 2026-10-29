@@ -20,7 +20,7 @@ namespace kotte
         : window_{width, height, title, target_fps}
         , camera_{window_.size()}
         , random_{seed}
-        , map_{make_room(20, 12, random_)}
+        , map_{make_room(50, 30, random_)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_size_),
             static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
@@ -119,6 +119,14 @@ namespace kotte
 
     void Application::update_timed_gameplay(float delta_time){
 
+        if (powerup_timer_ > 0.0f) {
+            powerup_timer_ -= delta_time;
+            if (powerup_timer_ <= 0.0f) {
+                powerup_timer_ = 0.0f;
+                bomb_blast_range_ = 3; 
+            }
+        }
+
         if (combo_timer_ > 0.0f) {
             combo_timer_ -= delta_time;
             if (combo_timer_ <= 0.0f) {
@@ -143,7 +151,19 @@ namespace kotte
                         break;
                     }
                 }
-                spawn_enemy_requests_.push_back(tile_centre(spawn_x, spawn_y));
+                spawn_enemy_requests_.push_back(tile_centre(spawn_x, spawn_y));           
+            }
+            powerup_spawn_timer_ -= delta_time;
+            if (powerup_spawn_timer_ <= 0.0f) {
+                powerup_spawn_timer_ = powerup_spawn_interval_;
+                for (int i = 0; i < 20; ++i) {
+                    int rx = GetRandomValue(1, map_.width() - 2);
+                    int ry = GetRandomValue(1, map_.height() - 2);
+                    if (map_.at(rx, ry).type == TileType::floor) {
+                        spawn_powerup_requests_.push_back(tile_centre(rx, ry));
+                        break;
+                    }
+                }
             }
         }
         // This list is independent of camera queries, so off-screen fuses advance.
@@ -215,6 +235,14 @@ namespace kotte
             enemy_ref.movement_heading = static_cast<CardinalDirection>(random_.next<4, std::uint8_t>());
         }
         spawn_enemy_requests_.clear();
+
+        for (const Vector2& position : spawn_powerup_requests_) {
+            const Entity new_powerup{ EntityKind::powerup, position };
+            const EntityHandle handle = entities_.create(new_powerup);
+            spatial_grid_.insert(handle, entity_world_bounds(new_powerup));
+        }
+        spawn_powerup_requests_.clear();
+
     }
 
     void Application::update_presentation(float delta_time){
@@ -289,6 +317,7 @@ namespace kotte
                     if (bomb_blast_range_ < max_blast_range_) {
                         bomb_blast_range_++;
                     }
+                    powerup_timer_ = powerup_duration_;
                     destroy_entity_requests_.push_back({ candidate_handle });
                 }
             }
@@ -715,6 +744,11 @@ namespace kotte
         std::string range_text = std::format("Blast Range: {}", bomb_blast_range_);
         DrawText(range_text.c_str(), window_.width() - 180, 60, 20, powerup_color_);
 
+        if (powerup_timer_ > 0.0f) {
+            std::string buff_text = std::format("Buff Time: {:.1f}s", powerup_timer_);
+            DrawText(buff_text.c_str(), window_.width() - 180, 85, 20, powerup_color_);
+        }
+
         if (combo_multiplier_ > 1) {
             std::string combo_text = std::format("COMBO x{} !", combo_multiplier_);
             DrawText(combo_text.c_str(), window_.width() - 260, 70, 20, ORANGE);
@@ -1008,6 +1042,9 @@ namespace kotte
         game_state = GameState::playing;
         combo_multiplier_ = 1; 
         combo_timer_ = 0.0f;
+        bomb_blast_range_ = 3;
+        powerup_timer_ = 0.0f;
+        spawn_powerup_requests_.clear();
 
         populate_entities();
         initialize_enemies();

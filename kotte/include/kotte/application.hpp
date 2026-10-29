@@ -138,7 +138,7 @@ namespace kotte
         static constexpr float bomb_fuse_seconds_ = 2.0f;
         //static constexpr std::uint8_t bomb_blast_range_ = 3;
 
-        static constexpr std::uint8_t max_blast_range_ = 8;
+        static constexpr std::uint8_t max_blast_range_ = 6;
         std::uint8_t bomb_blast_range_ = 3;
         static constexpr Color powerup_color_{ 0x39, 0xff, 0x14, 0xff };
 
@@ -178,7 +178,7 @@ namespace kotte
         bool exit_requested_ = false;
         GameState game_state = GameState::playing;
         int score = 0;
-        int target_score = 500;
+        int target_score = 5000;
         int combo_multiplier_ = 1;
         float combo_timer_ = 0.0f;
         static constexpr float combo_window_seconds_ = 3.0f;
@@ -186,5 +186,12 @@ namespace kotte
         float enemy_spawn_timer_ = 5.0f;
         static constexpr float enemy_spawn_interval_ = 3.0f;
         std::vector<Vector2> spawn_enemy_requests_;
+
+        float powerup_spawn_timer_ = 1.0f;
+        static constexpr float powerup_spawn_interval_ = 1.0f;
+        std::vector<Vector2> spawn_powerup_requests_;
+
+        float powerup_timer_ = 0.0f;
+        static constexpr float powerup_duration_ = 5.0f;
     };
 }
