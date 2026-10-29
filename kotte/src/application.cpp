@@ -118,6 +118,14 @@ namespace kotte
     }
 
     void Application::update_timed_gameplay(float delta_time){
+
+        if (combo_timer_ > 0.0f) {
+            combo_timer_ -= delta_time;
+            if (combo_timer_ <= 0.0f) {
+                combo_timer_ = 0.0f;
+                combo_multiplier_ = 1; 
+            }
+        }
         // This list is independent of camera queries, so off-screen fuses advance.
         for(const EntityHandle bomb_handle : active_bomb_handles_){
             Entity* bomb = entities_.try_get(bomb_handle);
@@ -404,11 +412,20 @@ namespace kotte
             }
 
             if (game_state == GameState::playing) {
+                bool scored_this_frame = false; 
+
                 if (doomed->kind == EntityKind::enemy) {
-                    score += 50; 
+                    score += 50 * combo_multiplier_;
+                    scored_this_frame = true;
                 }
                 else if (doomed->kind == EntityKind::crate) {
-                    score += 10; 
+                    score += 10 * combo_multiplier_;
+                    scored_this_frame = true;
+                }
+
+                if (scored_this_frame) {
+                    combo_multiplier_++;
+                    combo_timer_ = combo_window_seconds_;
                 }
             }
 
@@ -666,6 +683,11 @@ namespace kotte
 
         std::string range_text = std::format("Blast Range: {}", bomb_blast_range_);
         DrawText(range_text.c_str(), window_.width() - 180, 60, 20, powerup_color_);
+
+        if (combo_multiplier_ > 1) {
+            std::string combo_text = std::format("COMBO x{} !", combo_multiplier_);
+            DrawText(combo_text.c_str(), window_.width() - 260, 70, 20, ORANGE);
+        }
 
         if (game_state == GameState::won) {
             DrawText("YOU WON!", window_.width() / 2 - 100, window_.height() / 2 - 25, 50, GREEN);
@@ -953,6 +975,8 @@ namespace kotte
 
         score = 0;
         game_state = GameState::playing;
+        combo_multiplier_ = 1; 
+        combo_timer_ = 0.0f;
 
         populate_entities();
         initialize_enemies();
