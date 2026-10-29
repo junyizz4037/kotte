@@ -1,64 +1,43 @@
-# Bomberman World — [your game title]
+# Bomberman World — [Combo Bomber]
 
-**Student:** [your name]
-
-> Replace the prompts below and remove these instructions. Keep answers brief. Your implementation explanations and reflection belong in the presentation; you do not need to write them out here. Complete the final section only if seeking Pass with Distinction (VG).
+**Student:** [Junyi Zhu]
 
 ## How to play
 
-- **Controls:** [movement, bombs, restart, and any extension controls]
-- **Objective and rules:** [how to win/lose; which result wins if both happen together; any extension rules needed to understand the game]
-- **Configurations / demo setup:** [how to select gameplay/stress configurations and use any special setup or debug keys; write “default” where appropriate]
+- **Controls:** 
+    · Key W,A,S,D/ Arrow keys: Player movement
+    · Key Space: Place a bomb
+    · Key R: Restart the game after the game ends.
+    · Key Q/ Escape: Quit the game.
+
+- **Objective and rules:** 
+    · How to win: Achieve the target score of 5000 points by destroying the boxes and the enemies. An enemy killed scores 50, a box destroyed scores 10.
+    · Lose condition: Once collides with the enemy or affected by the blast of the explosion, the player will die immediately and lose the game.
+    · If the player dies when the score is achieved, the game loses.
+    · Power-up props: A green power-up prop will be generated on the map randomly. Once the player get the prop, the blast range will be increased by 1 and the buff will last for 6 seconds. The explosion range bonus effect can stack up to a maximum of 6.
+    · Combo rules: Destroying targets continuesly within 3 second will increase the score multiplier (x2, x3...).
+    · Enemy spawner: Enemies will be generated on the empty grid of the map randomly. The first one will be generated 5 seconds after the game starts, and then the enemies will be generated every 3 seconds thereafter.
+    
+- **Configurations / demo setup:**  Default.
+
 
 ## Features and validation
 
-(delete this pre-amble before submitting the assignment) Complete the five required features and three extensions of your choice. For each row, document **at least one useful check: what you tested, what you observed, and how the result compares with the expected behaviour**. One or two sentences per feature are enough. Choose a check that could reveal a mistake, such as a boundary case or interaction.
-
-Use the practical checks in the assignment to validate the acceptance conditions during development; this table is a small sample of that work. Manual play in a small, repeatable setup is sufficient. You can also use a debugger, temporary logging, or small scenarios set up in code. Screenshots, recordings, automated tests etc are welcome, but not required. Be ready to explain the relevant rules in your code.
-
 | Feature | Check, observed result, and expected behaviour |
 | --- | --- |
-| 1. Player damage and death | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| 2. Round states and objective | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| 3. Safe restart | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| 4. Solid bombs with owner escape | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| 5. Blast-range pickup | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| [# and name of chosen extension 1] | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| [# and name of chosen extension 2] | [what I tested, what I observed, and whether it matched the expected behaviour] |
-| [# and name of chosen extension 3] | [what I tested, what I observed, and whether it matched the expected behaviour] |
+| 1. Player damage and death |  I controlled the player directly walk into an enemy and also walk to the grid which is with the blast range to test if the player entity will disappear in this two condition. The player entity disappeared immediately once collides with the enemy or affected by the explosion. This result matches with the wish that the blast and enemy contacts cause fatal damage.  |
+| 2. Round states and objective | I lowered the final score needed to win the game and controlled the player to die to test if the window shows the correct state if I win or lose the game. The text I drew for the win/ lose condition correctly shown on the middle of the window and the gameplay paused. The result matches with the expected game state display. |
+| 3. Safe restart | I died intentionally and pressed Key R to restart. The map reset, the score and timers returned to 0. I tested if the old bombs will still explode after I done the multiple bombs and the bomb did not explode and will disappear. This matches the expected behaviour that old round states are completely and safely cleared. |
+| 4. Solid bombs with owner escape | I placed a bomb, walked out of its tile, and tried to walk back into it. The player was blocked by the bomb and could not overlap as expected. |
+| 5. Blast-range pickup | Firstly I picked up the spawned green power-up prop which is generated on the fixed grid every game and the blast range was increased. Lately I added the function that the power-up would generated every 10 seconds and the buff would only last 5 seconds. The buff effect is expected can be stacked up to 6. Then I start the game to see if the power-up can be successfully generated randomly and I didn't find any generated random props at first try. Then I go back to the code and found out I had mistakenly wrote the powerup timer inside the enemy spawner timer's {} scope block. After fixing this issue I the observed the powerups spawning correctly on random floor tiles every 10 seconds, the blast range increased up to 6 as expected. |
+| 6. Multiple bombs per owner | I rapidly pressed the Spacebar 4 times while moving. Only 3 bombs were placed, and the 4th attempt was ignored until the first bomb exploded which match with the maximum bomb capacity I set. |
+| 11. Scoring and combos | I destroyed few crates consecutively within a 3-second time window to test the combo multiplier logic. The first crate awarded the base 10 points and the second crate awarded 20 points, with an orange "COMBO x2 !" text appearing on the top right of the window. After 3 seconds of no any destructions, the combo multiplier reset. The result matches with the expected scoring multiplier logic and the 3-second combo window timer. |
+| 15. Enemy spawners | I adjusted the map to a smaller size and I stand still in a corner at the beginning of the game. The first new enemy spawned exactly after 5 seconds as I count manully and the rest enemies were generated every 3 second as wish.  |
 
-Example: “I ended a round with live bombs and restarted three times to check that old-round state was cleared. No old explosions appeared, and bomb capacity reset each time.” Report your actual results, including any failures or remaining limitations; stating that something “works” does not describe a check.
-
-**Known issues:** [remaining problems and how to encounter them, or “None known after testing”]
-
+**Known issues:** None known after testing.
 ## Sources and assistance
 
 This project builds on the shared Kotte foundations.
 
-[Briefly identify meaningful external code/resources, discussion or collaboration, and AI assistance. Link to sources where relevant, say what they contributed, and explain what you checked yourself. State “None beyond the course material” if applicable. No prompt transcript or activity diary is needed. Retain required licence/attribution notices.]
+During the development, I rechecked the concept of Spatial Partitioning and broad-phase collision detection to fully understand how the engine optimizes entity queries, ensuing I correctly integrated the dynamically spawned enemies and props into the spatial grid. Additionally, I used an AI assistant to help fix bugs I met such as identifying a scope nesting issue with the power-up timer. Also AI suggested using a for loop with a 20-iteration safety limit instead of a while loop for my random tile search when generating the enemies, preventing potential infinite loops when the map becomes crowded. All AI-suggested fixes were manually reviewed, understood, and tested by me before being integrated into the code. No other external resources were used.
 
-## Architectural investigation — VG only
-
-Delete this section for a G submission. For VG, pose a focused engineering question about one decision in your implementation, investigate it, and draw a conclusion from evidence. Documenting the explanation already required for G is not enough. Aim for half a page to one page, excluding small tables, diagrams, or code excerpts. You can use the same decision in your presentation too.
-
-### Decision
-
-[State the question you are investigating and the implementation decision it concerns. Describe your current approach and a plausible alternative. Identify the relevant code. You do not need to implement the alternative.]
-
-### Method
-
-[How did you investigate the decision? Give enough detail to reproduce the key observation: setup, input, configuration/seed, and the test, trace, debugger inspection, or other method used.]
-
-### Evidence
-
-[What did you actually observe in your game? Include the relevant result or a small excerpt, table, or link to supporting material.]
-
-### Interpretation
-
-[Explain why it happened using the relevant code or architecture. Analyse at least one edge case, failure, defect, limitation, or trade-off illustrated by the investigation. Discuss relevant consequences for correctness, maintainability, performance, and/or scalability; you do not need to cover all four.]
-
-### Conclusion
-
-[When is your approach appropriate, what limits it, and when might an alternative become preferable? Base the conclusion on your evidence. Confirming that the current approach is suitable is a valid result.]
-
-<!-- Submission: commit and push this README with your source to GitHub or the internal Gitea server. Submit the final commit link and a runnable Release ZIP from that version in Studium. Ensure the teacher can access the repository throughout assessment. -->
