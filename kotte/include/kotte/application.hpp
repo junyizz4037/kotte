@@ -136,7 +136,12 @@ namespace kotte
         static constexpr float player_speed_ = 240.0f;
         static constexpr float enemy_speed_ = 80.0f;
         static constexpr float bomb_fuse_seconds_ = 2.0f;
-        static constexpr std::uint8_t bomb_blast_range_ = 3;
+        //static constexpr std::uint8_t bomb_blast_range_ = 3;
+
+        static constexpr std::uint8_t max_blast_range_ = 8;
+        std::uint8_t bomb_blast_range_ = 3;
+        static constexpr Color powerup_color_{ 0x39, 0xff, 0x14, 0xff };
+
         static constexpr float blast_effect_seconds_ = 0.35f;
         static constexpr Color background_color_{0x11, 0x22, 0x33, 0xff};
         static constexpr Color floor_colors_[3]{

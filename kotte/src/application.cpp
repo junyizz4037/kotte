@@ -245,6 +245,14 @@ namespace kotte
                     break;
                 }
             }
+            if (candidate != nullptr && candidate->kind == EntityKind::powerup) {
+                if (CheckCollisionRecs(player_bounds, entity_collision_bounds(*candidate))) {
+                    if (bomb_blast_range_ < max_blast_range_) {
+                        bomb_blast_range_++;
+                    }
+                    destroy_entity_requests_.push_back({ candidate_handle });
+                }
+            }
         }
 
         //check the explosion damage to the player
@@ -657,6 +665,9 @@ namespace kotte
         std::string score_text = std::format("Score: {} / {}", score, target_score);
         DrawText(score_text.c_str(), window_.width() - 260, 35, 30, YELLOW);
 
+        std::string range_text = std::format("Blast Range: {}", bomb_blast_range_);
+        DrawText(range_text.c_str(), window_.width() - 180, 60, 20, powerup_color_);
+
         if (game_state == GameState::won) {
             DrawText("YOU WON!", window_.width() / 2 - 100, window_.height() / 2 - 25, 50, GREEN);
             DrawText("Press R to Restart", window_.width() / 2 - 130, window_.height() / 2 + 30, 30, GREEN);
@@ -677,6 +688,10 @@ namespace kotte
         const Entity player_entity{EntityKind::player, {tile_size_ * 2.5f, tile_size_ * 2.5f}};
         player_handle_ = entities_.create(player_entity);
         spatial_grid_.insert(player_handle_, entity_world_bounds(player_entity));
+
+        const Entity powerup{ EntityKind::powerup, {tile_size_ * 3.5f, tile_size_ * 3.5f} };
+        const EntityHandle powerup_handle = entities_.create(powerup);
+        spatial_grid_.insert(powerup_handle, entity_world_bounds(powerup));
 
         for(int y = 1; y < map_.height() - 1; ++y){
             for(int x = 1; x < map_.width() - 1; ++x){
@@ -743,6 +758,8 @@ namespace kotte
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
         case EntityKind::crate: size = {36.0f, 48.0f}; break;
         case EntityKind::enemy: size = {28.0f, 30.0f}; break;
+
+        case EntityKind::powerup: size = { 16.0f, 16.0f }; break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};
@@ -759,6 +776,8 @@ namespace kotte
         case EntityKind::bomb: size = {18.0f, 12.0f}; break;
         case EntityKind::crate: size = {32.0f, 32.0f}; break;
         case EntityKind::enemy: size = {24.0f, 14.0f}; break;
+
+        case EntityKind::powerup: size = { 16.0f, 16.0f }; break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};
@@ -899,6 +918,8 @@ namespace kotte
         case EntityKind::bomb: return bomb_color_;
         case EntityKind::crate: return crate_color_;
         case EntityKind::enemy: return enemy_color_;
+
+        case EntityKind::powerup: return powerup_color_;
         }
         return MAGENTA;
     }
